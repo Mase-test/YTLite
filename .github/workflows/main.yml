@@ -234,6 +234,16 @@ jobs:
           cd ${{ github.workspace }}
           git clone --quiet --depth=1 --recurse-submodules https://github.com/therealFoxster/DontEatMyContent.git
 
+      - name: Print full workspace structure
+        run: |
+          echo "====== Workspace root ======"
+          find ${{ github.workspace }} -print | sed -e "s|${{ github.workspace }}/| |"
+
+          echo ""
+          echo "====== THEOS include ======"
+          find ${{ github.workspace }}/theos/include -print | sed -e "s|${{ github.workspace }}/theos/include/| |"
+
+
       - name: Build YouLoop
         run: |
           cd ${{ github.workspace }}/YouLoop
