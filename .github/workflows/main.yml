@@ -241,7 +241,7 @@ jobs:
           ln -sf $THEOS/include/YouTubeHeader ../YouTubeHeader
           
           # Fix the import paths in Tweak.x to use the correct path
-          sed -i.bak 's|#import "../YouTubeHeader/|#import <YouTubeHeader/|g' Tweak.x>"
+          sed -i.bak 's|#import "../YouTubeHeader/|#import <YouTubeHeader/|g' Tweak.x
           
           # Add the correct include path to the Makefile
           echo "YouLoop_CFLAGS = -I$THEOS/include/YouTubeHeader" >> Makefile
