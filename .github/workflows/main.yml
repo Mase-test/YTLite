@@ -235,24 +235,30 @@ jobs:
           git clone --quiet --depth=1 --recurse-submodules https://github.com/therealFoxster/DontEatMyContent.git
 
       - name: Build YouLoop
-        run: |
-          cd ${{ github.workspace }}/YouLoop
-          rm -rf ../YouTubeHeader
-          sed -i.bak 's|#import \"../YouTubeHeader/\([^"]*\)\"|#import <YouTubeHeader/\1>|g' Tweak.x
-          sed -i.bak 's|#include \"../YouTubeHeader/\([^"]*\)\"|#include <YouTubeHeader/\1>|g' Tweak.x
-          sed -i.bak 's|#import \"../YTVideoOverlay/\([^"]*\)\"|#import <YTVideoOverlay/\1>|g' Tweak.x
-          sed -i.bak 's|#include \"../YTVideoOverlay/\([^"]*\)\"|#include <YTVideoOverlay/\1>|g' Tweak.x
+  run: |
+    cd ${{ github.workspace }}
 
-          # Aggiungi i percorsi di include corretti al Makefile
-          echo "YouLoop_CFLAGS = -I$THEOS/include -I${{ github.workspace }}/YTVideoOverlay" >> Makefile
-          echo "YouLoop_CCFLAGS = -Wno-error -Wno-duplicate-protocol -Wno-duplicate-method-match" >> Makefile
+    # Assicurati che YTVideoOverlay sia accanto a YouLoop
+    if [ ! -d "YTVideoOverlay" ]; then
+      git clone --quiet --depth=1 https://github.com/PoomSmart/YTVideoOverlay.git
+    fi
 
-          # Compilazione e creazione del pacchetto .deb
-          make clean package DEBUG=0 FINALPACKAGE=1
-          mv packages/*.deb ${{ github.workspace }}/youloop.deb
-        env:
-          THEOS: ${{ github.workspace }}/theos
+    if [ ! -d "YouLoop" ]; then
+      git clone --quiet --depth=1 https://github.com/bhackel/YouLoop.git
+    fi
 
+    cd YouLoop
+
+    # Pulizia build precedente
+    make clean
+
+    # Build con import relativi
+    make package DEBUG=0 FINALPACKAGE=1
+
+    # Sposta il .deb nella workspace
+    mv packages/*.deb ${{ github.workspace }}/youloop.deb
+  env:
+    THEOS: ${{ github.workspace }}/theos
 
       # ... build di altri tweak ...
 
