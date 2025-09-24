@@ -251,9 +251,9 @@ jobs:
           # Pulizia build precedente
           make clean
 
-          # Aggiungi percorsi di include corretti per YTVideoOverlay e YouTubeHeader
-          echo "YouLoop_CFLAGS = -I$THEOS/include -I${{ github.workspace }}/YTVideoOverlay/YTVideoOverlay" >> Makefile
-          echo "YouLoop_CCFLAGS = -Wno-error -Wno-duplicate-protocol -Wno-duplicate-method-match" >> Makefile
+          # Aggiungi percorsi di include corretti per YouTubeHeader e YTVideoOverlay
+          echo "YouLoop_CFLAGS += -I$THEOS/include -I${{ github.workspace }}/YTVideoOverlay/YTVideoOverlay -I${{ github.workspace }}/theos/include/YouTubeHeader" >> Makefile
+          echo "YouLoop_CCFLAGS += -Wno-error -Wno-duplicate-protocol -Wno-duplicate-method-match" >> Makefile
 
           # Compila e crea il pacchetto .deb
           make package DEBUG=0 FINALPACKAGE=1
