@@ -236,32 +236,13 @@ jobs:
 
       - name: Build YouLoop
         run: |
-          cd ${{ github.workspace }}
-
-          # Clona le librerie se non esistono
-          for lib in YTVideoOverlay YouTubeHeader YouLoop; do
-            if [ ! -d "$lib" ]; then
-              if [ "$lib" = "YouLoop" ]; then
-                git clone --quiet --depth=1 https://github.com/bhackel/YouLoop.git
-              else
-                git clone --quiet --depth=1 https://github.com/PoomSmart/$lib.git
-              fi
-            fi
-          done
-
-          cd YouLoop
-
-          # Rimuovi ../ dagli import in Tweak.x
-          sed -i.bak 's|#import "../YouTubeHeader/|#import "YouTubeHeader/|g' Tweak.x
-          sed -i.bak 's|#include "../YouTubeHeader/|#include "YouTubeHeader/|g' Tweak.x
-          sed -i.bak 's|#import "../YTVideoOverlay/|#import "YTVideoOverlay/|g' Tweak.x
-          sed -i.bak 's|#include "../YTVideoOverlay/|#include "YTVideoOverlay/|g' Tweak.x
+          cd ${{ github.workspace }}/YouLoop
 
           # Pulizia build precedente
           make clean
 
-          # Aggiungi percorsi di include al Makefile
-          echo "YouLoop_CFLAGS = -I$THEOS/include -I${{ github.workspace }}/YTVideoOverlay -I${{ github.workspace }}/YouTubeHeader" >> Makefile
+          # Aggiungi percorsi di include corretti per YTVideoOverlay e YouTubeHeader
+          echo "YouLoop_CFLAGS = -I$THEOS/include -I${{ github.workspace }}/YTVideoOverlay/YTVideoOverlay" >> Makefile
           echo "YouLoop_CCFLAGS = -Wno-error -Wno-duplicate-protocol -Wno-duplicate-method-match" >> Makefile
 
           # Compila e crea il pacchetto .deb
@@ -271,8 +252,6 @@ jobs:
           mv packages/*.deb ${{ github.workspace }}/youloop.deb
         env:
           THEOS: ${{ github.workspace }}/theos
-
-      # ... build di altri tweak ...
 
       - name: Build YouPiP
         if: ${{ inputs.enable_youpip }}
