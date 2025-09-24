@@ -235,30 +235,30 @@ jobs:
           git clone --quiet --depth=1 --recurse-submodules https://github.com/therealFoxster/DontEatMyContent.git
 
       - name: Build YouLoop
-  run: |
-    cd ${{ github.workspace }}
+        run: |
+          cd ${{ github.workspace }}
 
-    # Assicurati che YTVideoOverlay sia accanto a YouLoop
-    if [ ! -d "YTVideoOverlay" ]; then
-      git clone --quiet --depth=1 https://github.com/PoomSmart/YTVideoOverlay.git
-    fi
+          # Assicurati che YTVideoOverlay sia accanto a YouLoop
+          if [ ! -d "YTVideoOverlay" ]; then
+          git clone --quiet --depth=1 https://github.com/PoomSmart/YTVideoOverlay.git
+          fi
 
-    if [ ! -d "YouLoop" ]; then
-      git clone --quiet --depth=1 https://github.com/bhackel/YouLoop.git
-    fi
+          if [ ! -d "YouLoop" ]; then
+          git clone --quiet --depth=1 https://github.com/bhackel/YouLoop.git
+          fi
 
-    cd YouLoop
+          cd YouLoop
 
-    # Pulizia build precedente
-    make clean
+          # Pulizia build precedente
+          make clean
 
-    # Build con import relativi
-    make package DEBUG=0 FINALPACKAGE=1
+          # Build con import relativi
+          make package DEBUG=0 FINALPACKAGE=1
 
-    # Sposta il .deb nella workspace
-    mv packages/*.deb ${{ github.workspace }}/youloop.deb
-  env:
-    THEOS: ${{ github.workspace }}/theos
+          # Sposta il .deb nella workspace
+          mv packages/*.deb ${{ github.workspace }}/youloop.deb
+        env:
+          THEOS: ${{ github.workspace }}/theos
 
       # ... build di altri tweak ...
 
