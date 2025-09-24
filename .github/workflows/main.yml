@@ -196,9 +196,6 @@ jobs:
           # Create a symlink to YouTubeHeader in the parent directory
           ln -sf $THEOS/include/YouTubeHeader ${{ github.workspace }}/YouTubeHeader
           
-          # Alternatively, copy the headers to the expected location
-          mkdir -p ${{ github.workspace }}/YouLoop/../YouTubeHeader
-          cp -r $THEOS/include/YouTubeHeader/* ${{ github.workspace }}/YouLoop/../YouTubeHeader/
         env:
           THEOS: ${{ github.workspace }}/theos
 
