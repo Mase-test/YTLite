@@ -234,44 +234,33 @@ jobs:
           cd ${{ github.workspace }}
           git clone --quiet --depth=1 --recurse-submodules https://github.com/therealFoxster/DontEatMyContent.git
 
-      - name: Build YouLoop
-        run: |
-          cd ${{ github.workspace }}/YouLoop
-          
-          # Rimuovi il symlink/copia precedente per evitare duplicati
-          rm -rf ../YouTubeHeader
-          
-          # Correggi gli import nel Tweak.x per usare il percorso corretto
-          sed -i.bak 's|#import \"../YouTubeHeader/|#import <YouTubeHeader/|g' Tweak.x
-          sed -i.bak 's|#include \"../YouTubeHeader/|#include <YouTubeHeader/|g' Tweak.x
-          
-          # Correggi anche gli import di YTVideoOverlay
-          sed -i.bak 's|#import \"../YTVideoOverlay/|#import <YTVideoOverlay/|g' Tweak.x
-          sed -i.bak 's|#include \"../YTVideoOverlay/|#include <YTVideoOverlay/|g' Tweak.x
-          
-          # Aggiungi i percorsi di include corretti al Makefile
-          echo "YouLoop_CFLAGS = -I$THEOS/include -I${{ github.workspace }}/YTVideoOverlay" >> Makefile
-          echo "YouLoop_CCFLAGS = -Wno-error -Wno-duplicate-protocol -Wno-duplicate-method-match" >> Makefile
-          
-          make clean package DEBUG=0 FINALPACKAGE=1
-          mv packages/*.deb ${{ github.workspace }}/youloop.deb
-        env:
-          THEOS: ${{ github.workspace }}/theos
+     - name: Build YouLoop
+  run: |
+    cd ${{ github.workspace }}/YouLoop
+
+    # Rimuovi il symlink/copia precedente per evitare duplicati
+    rm -rf ../YouTubeHeader
+
+    # Correggi gli import nel Tweak.x per usare il percorso corretto
+    # Trasforma tutti gli import "../Header/..." in <Header/...>
+    sed -i.bak 's|#import \"../YouTubeHeader/\([^"]*\)\"|#import <YouTubeHeader/\1>|g' Tweak.x
+    sed -i.bak 's|#include \"../YouTubeHeader/\([^"]*\)\"|#include <YouTubeHeader/\1>|g' Tweak.x
+    sed -i.bak 's|#import \"../YTVideoOverlay/\([^"]*\)\"|#import <YTVideoOverlay/\1>|g' Tweak.x
+    sed -i.bak 's|#include \"../YTVideoOverlay/\([^"]*\)\"|#include <YTVideoOverlay/\1>|g' Tweak.x
+
+    # Aggiungi i percorsi di include corretti al Makefile
+    echo "YouLoop_CFLAGS = -I$THEOS/include -I${{ github.workspace }}/YTVideoOverlay" >> Makefile
+    echo "YouLoop_CCFLAGS = -Wno-error -Wno-duplicate-protocol -Wno-duplicate-method-match" >> Makefile
+
+    # Compilazione e creazione del pacchetto .deb
+    make clean package DEBUG=0 FINALPACKAGE=1
+    mv packages/*.deb ${{ github.workspace }}/youloop.deb
+  env:
+    THEOS: ${{ github.workspace }}/theos
+
 
       # ... build di altri tweak ...
 
-      - name: Inject tweaks into IPA
-        run: |
-          tweaks="ytplus.deb OpenYoutubeSafariExtension.appex youloop.deb"
-
-          for f in *.deb; do
-            if [ -f "$f" ] && [ "$f" != "ytplus.deb" ] && [ "$f" != "youloop.deb" ]; then
-              tweaks="$tweaks $f"
-            fi
-          done
-
-          cyan -i youtube.ipa -o YouTubePlus_${{ inputs.tweak_version }}.ipa -uwef $tweaks -n "${{ inputs.display_name }}" -b ${{ inputs.bundle_id }}
-          
       - name: Build YouPiP
         if: ${{ inputs.enable_youpip }}
         run: |
