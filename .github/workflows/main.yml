@@ -190,15 +190,6 @@ jobs:
           cd ${{ github.workspace }}
           git clone --quiet --depth=1 https://github.com/bhackel/YouLoop.git
 
-      - name: Fix YouLoop header paths
-        run: |
-          cd ${{ github.workspace }}/YouLoop
-          # Create a symlink to YouTubeHeader in the parent directory
-          ln -sf $THEOS/include/YouTubeHeader ${{ github.workspace }}/YouTubeHeader
-          
-        env:
-          THEOS: ${{ github.workspace }}/theos
-
       - name: Clone YouPiP
         if: ${{ inputs.enable_youpip }}
         run: |
@@ -246,8 +237,15 @@ jobs:
       - name: Build YouLoop
         run: |
           cd ${{ github.workspace }}/YouLoop
+          # Create a symlink to YouTubeHeader in the expected location
+          ln -sf $THEOS/include/YouTubeHeader ../YouTubeHeader
+          
+          # Fix the import paths in Tweak.x to use the correct path
+          sed -i.bak 's|#import "../YouTubeHeader/|#import <YouTubeHeader/|g' Tweak.x
+          
           # Add the correct include path to the Makefile
-          sed -i.bak 's/TWEAKNAME = YouLoop/TWEAKNAME = YouLoop\nYouLoop_CFLAGS = -I$(THEOS)/include\/YouTubeHeader/' Makefile
+          echo "YouLoop_CFLAGS = -I$THEOS/include/YouTubeHeader" >> Makefile
+          
           make clean package DEBUG=0 FINALPACKAGE=1
           mv packages/*.deb ${{ github.workspace }}/youloop.deb
         env:
