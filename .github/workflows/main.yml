@@ -92,15 +92,22 @@ jobs:
 
       - name: Download and validate IPA
         run: |
-          # Usa gdown per gestire i link di Google Drive (gestisce il bypass dell'avviso virus)
-          if [[ "${{ inputs.ipa_url }}" == *"drive.google.com"* ]]; then
-            gdown "${{ inputs.ipa_url }}" -O ${{ github.workspace }}/youtube.ipa
-          else
-            wget "${{ inputs.ipa_url }}" --no-verbose -O ${{ github.workspace }}/youtube.ipa
-          fi
+          echo "=== DEBUG INFO ==="
+          echo "URL Inserito: ${{ inputs.ipa_url }}"
           
-          # Controllo del tipo di file
+          # Scarica il file
+          wget "${{ inputs.ipa_url }}" --no-verbose -O ${{ github.workspace }}/youtube.ipa
+          
+          echo "--- Controllo Tipo File ---"
           file_type=$(file --mime-type -b ${{ github.workspace }}/youtube.ipa)
+          echo "Tipo rilevato: $file_type"
+          
+          echo "--- Anteprima Contenuto File (Prime 15 righe) ---"
+          # Questo comando stampa l'inizio del file. Se vedi roba tipo <!DOCTYPE html> è la conferma dell'errore.
+          head -n 15 ${{ github.workspace }}/youtube.ipa
+          echo "=================="
+
+          # Validazione originale
           if [[ "$file_type" != "application/x-ios-app" && "$file_type" != "application/zip" ]]; then
             echo "::error::Validation failed: The downloaded file is not a valid IPA. Detected type: $file_type."
             exit 1
