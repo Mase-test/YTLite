@@ -3,61 +3,51 @@ name: Create YouTube Plus app
 on:
   workflow_dispatch:
     inputs:
-
       enable_youpip:
         description: "Integrate YouPiP"
         type: boolean
         required: true
         default: false
-
       enable_ytuhd:
         description: "Integrate YTUHD"
         type: boolean
         required: true
         default: false
-
       enable_yq:
         description: "Integrate YouQuality"
         type: boolean
         required: true
         default: false
-
       enable_ryd:
         description: "Integrate Return YouTube Dislikes"
         type: boolean
         required: true
         default: false
-
       enable_demc:
         description: "Integrate DontEatMyContent"
         type: boolean
         required: true
         default: false
-
       ipa_url:
         description: "URL to the decrypted IPA file"
         default: ""
         required: true
         type: string
-
       tweak_version:
         description: "The version of the tweak to use. Enter the version manually from dayanch96/YTLite/releases or leave default"
         default: "5.2b4"
         required: true
         type: string
-
       display_name:
         description: "App Name (Optional)"
         default: "YouTube"
         required: true
         type: string
-
       bundle_id:
         description: "BundleID (Optional)"
         default: "com.google.ios.youtube"
         required: true
         type: string
-
       info_note:
         description: "TIP: Learn more about integrations in the README via the link below"
         default: "https://github.com/dayanch96/YTLite#tweak-integration-details"
@@ -70,7 +60,7 @@ concurrency:
 
 jobs:
   build:
-    name: 
+    name: Build YouTube Plus
     runs-on: macos-latest
     permissions:
       contents: write
@@ -92,26 +82,35 @@ jobs:
 
       - name: Download and validate IPA
         run: |
-          echo "=== DEBUG INFO ==="
-          echo "URL Inserito: ${{ inputs.ipa_url }}"
+          echo "=== INIZIO DOWNLOAD ==="
+          echo "URL: ${{ inputs.ipa_url }}"
           
-          # Scarica il file
-          wget "${{ inputs.ipa_url }}" --no-verbose -O ${{ github.workspace }}/youtube.ipa
-          
-          echo "--- Controllo Tipo File ---"
-          file_type=$(file --mime-type -b ${{ github.workspace }}/youtube.ipa)
-          echo "Tipo rilevato: $file_type"
-          
-          echo "--- Anteprima Contenuto File (Prime 15 righe) ---"
-          # Questo comando stampa l'inizio del file. Se vedi roba tipo <!DOCTYPE html> è la conferma dell'errore.
-          head -n 15 ${{ github.workspace }}/youtube.ipa
-          echo "=================="
+          # Rimuove eventuali file residui
+          rm -f ${{ github.workspace }}/youtube.ipa
 
-          # Validazione originale
-          if [[ "$file_type" != "application/x-ios-app" && "$file_type" != "application/zip" ]]; then
-            echo "::error::Validation failed: The downloaded file is not a valid IPA. Detected type: $file_type."
+          # Logica di download intelligente
+          if [[ "${{ inputs.ipa_url }}" == *"drive.google"* ]]; then
+            echo "Rilevato link Google Drive. Uso gdown..."
+            # --fuzzy aiuta a gestire formati di link leggermente diversi
+            gdown "${{ inputs.ipa_url }}" -O ${{ github.workspace }}/youtube.ipa --fuzzy
+          else
+            echo "Link standard. Uso wget..."
+            wget "${{ inputs.ipa_url }}" --no-verbose -O ${{ github.workspace }}/youtube.ipa
+          fi
+          
+          echo "=== VALIDAZIONE FILE ==="
+          file_type=$(file --mime-type -b ${{ github.workspace }}/youtube.ipa)
+          echo "Tipo file rilevato: $file_type"
+          
+          # Controllo se è un archivio valido (IPA è uno zip) o un binario iOS
+          if [[ "$file_type" != "application/x-ios-app" && "$file_type" != "application/zip" && "$file_type" != "application/octet-stream" ]]; then
+            echo "::error::ERRORE CRITICO: Il file scaricato non è un IPA valido."
+            echo "Tipo rilevato: $file_type (probabilmente è una pagina HTML di errore/download)"
+            echo "Contenuto (prime 10 righe):"
+            head -n 10 ${{ github.workspace }}/youtube.ipa
             exit 1
           fi
+          echo "File validato con successo."
 
       - name: Install Dependencies
         run: brew install make ldid
@@ -251,27 +250,17 @@ jobs:
         run: |
           echo "====== Workspace root ======"
           find ${{ github.workspace }} -print | sed -e "s|${{ github.workspace }}/| |"
-
           echo ""
           echo "====== THEOS include ======"
           find ${{ github.workspace }}/theos/include -print | sed -e "s|${{ github.workspace }}/theos/include/| |"
 
-
       - name: Build YouLoop
         run: |
           cd ${{ github.workspace }}/YouLoop
-
-          # Pulizia build precedente
           make clean
-
-          # Aggiungi percorsi di include corretti per YouTubeHeader e YTVideoOverlay
           echo "YouLoop_CFLAGS += -I$THEOS/include -I${{ github.workspace }}/YTVideoOverlay/YTVideoOverlay -I${{ github.workspace }}/theos/include/YouTubeHeader" >> Makefile
           echo "YouLoop_CCFLAGS += -Wno-error -Wno-duplicate-protocol -Wno-duplicate-method-match" >> Makefile
-
-          # Compila e crea il pacchetto .deb
           make package DEBUG=0 FINALPACKAGE=1
-
-          # Sposta il .deb nella workspace principale
           mv packages/*.deb ${{ github.workspace }}/youloop.deb
         env:
           THEOS: ${{ github.workspace }}/theos
@@ -342,13 +331,11 @@ jobs:
       - name: Inject tweaks into IPA
         run: |
           tweaks="ytplus.deb OpenYoutubeSafariExtension.appex youloop.deb"
-
           for f in *.deb; do
             if [ -f "$f" ] && [ "$f" != "ytplus.deb" ] && [ "$f" != "youloop.deb" ]; then
               tweaks="$tweaks $f"
             fi
           done
-
           cyan -i youtube.ipa -o YouTubePlus_${{ inputs.tweak_version }}.ipa -uwef $tweaks -n "${{ inputs.display_name }}" -b ${{ inputs.bundle_id }}
 
       - name: Upload to GitHub Releases
