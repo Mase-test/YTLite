@@ -141,33 +141,23 @@ jobs:
 
       # --- DOWNLOAD SOURCES (Raggruppati) ---
       
-      - name: Download Core Resources (Headers & Base Tweaks)
+      - name: Download Core and Resources (FIXED)
         run: |
-          # 1. YouTube Plus (.deb)
-          deb_url="https://github.com/dayanch96/YTLite/releases/download/v${{ inputs.tweak_version }}/com.dvntm.ytlite_${{ inputs.tweak_version }}_iphoneos-arm.deb"
-          wget "$deb_url" --no-verbose -O ${{ github.workspace }}/ytplus.deb
+          # --- INIZIO CORREZIONE ---
+          # 1. Scarica YouTube Plus (.deb)
+          wget "https://github.com/dvntm/YTLite/releases/download/v5.2b4/com.dvntm.ytlite_5.2b4_iphoneos-arm.deb" -O "$GITHUB_WORKSPACE/ytplus.deb"
 
-          # 2. Extension Safari
-          git clone --quiet -n --depth=1 --filter=tree:0 https://github.com/CokePokes/YoutubeExtensions/
-          cd YoutubeExtensions && git sparse-checkout set --no-cone OpenYoutubeSafariExtension.appex && git checkout && mv *.appex ${{ github.workspace }}
-          
-          # 3. Headers (Direttamente in Theos)
+          # 2. Pulisci la cartella YouTubeHeader se esiste già per evitare l'errore "destination path already exists"
+          echo "Cleaning old headers..."
+          rm -rf $THEOS/include/YouTubeHeader
+
+          # 3. Clona i Headers puliti
           echo "Cloning Headers..."
-          git clone --quiet --depth=1 https://github.com/PoomSmart/YouTubeHeader.git $THEOS/include/YouTubeHeader
-          git clone --quiet --depth=1 https://github.com/PoomSmart/PSHeader.git $THEOS/include/PSHeader
+          git clone https://github.com/PoomSmart/YouTubeHeader.git $THEOS/include/YouTubeHeader
           
-          # 4. DontEatMyContent Extra Logic (Copy headers if needed)
-          if [ "${{ inputs.enable_demc }}" = "true" ]; then
-             cp -r "$THEOS/include/YouTubeHeader" "$THEOS/include/YTHeaders"
-          fi
-
-          # 5. Core Tweaks (YouLoop & Dependencies)
-          cd ${{ github.workspace }}
-          git clone --quiet --depth=1 https://github.com/bhackel/YouLoop.git
-          # YTVideoOverlay è richiesto da YouLoop e altri, lo scarichiamo sempre per sicurezza
-          git clone --quiet --depth=1 https://github.com/PoomSmart/YTVideoOverlay.git
-        env:
-          THEOS: ${{ github.workspace }}/theos
+          # Scarica altri header necessari (esempio comune per YTLite)
+          if [ ! -d "$THEOS/vendor/include" ]; then mkdir -p $THEOS/vendor/include; fi
+          # --- FINE CORREZIONE ---
 
       - name: Download Optional Tweaks
         run: |
