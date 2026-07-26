@@ -39,6 +39,14 @@ on:
         required: true
         default: false
 
+      # >>> NUOVO: YouLoop (pulsante loop nell'overlay del player)
+      # Richiede YTVideoOverlay, che _build_tweaks.yml deve costruire e iniettare.
+      enable_youloop:
+        description: "Integrate YouLoop (loop button)"
+        type: boolean
+        required: true
+        default: true
+
       ipa_url:
         description: "URL to the decrypted IPA file"
         default: ""
@@ -83,6 +91,7 @@ jobs:
       enable_ryd: ${{ inputs.enable_ryd }}
       enable_ytabc: ${{ inputs.enable_ytabc }}
       enable_demc: ${{ inputs.enable_demc }}
+      enable_youloop: ${{ inputs.enable_youloop }}   # <<< NUOVO
       tweak_version: ${{ inputs.tweak_version }}
 
   package:
@@ -102,7 +111,7 @@ jobs:
       - name: Hide sensitive inputs
         uses: levibostian/action-hide-sensitive-inputs@v1
         with:
-          exclude_inputs: bundle_id,display_name,enable_demc,enable_ryd,enable_ytabc,enable_youpip,enable_yq,enable_ytuhd,info_note,tweak_version
+          exclude_inputs: bundle_id,display_name,enable_demc,enable_ryd,enable_ytabc,enable_youloop,enable_youpip,enable_yq,enable_ytuhd,info_note,tweak_version
 
       - name: Download and validate IPA
         run: |
@@ -113,6 +122,19 @@ jobs:
             exit 1
           fi
 
+      # >>> NUOVO: fallisce subito e con un messaggio chiaro se le .deb di YouLoop
+      # non sono arrivate dall'artifact, invece di produrre una IPA senza il pulsante.
+      - name: Verify YouLoop artifacts
+        if: ${{ inputs.enable_youloop }}
+        run: |
+          for f in youloop.deb ytvo.deb; do
+            if [ ! -f "$f" ]; then
+              echo "::error::$f non trovato nell'artifact 'built-debs'. Controlla gli step YouLoop/YTVideoOverlay in _build_tweaks.yml."
+              exit 1
+            fi
+          done
+          echo "YouLoop e YTVideoOverlay presenti."
+
       - name: Install cyan
         run: pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
 
@@ -120,8 +142,12 @@ jobs:
         run: |
           tweaks="ytplus.deb OpenYoutubeSafariExtension.appex"
           for f in *.deb; do
-            [ -f "$f" ] && tweaks="$tweaks $f"
+            # ytplus.deb è già nella lista: senza questo controllo verrebbe passato due volte a cyan
+            if [ -f "$f" ] && [ "$f" != "ytplus.deb" ]; then
+              tweaks="$tweaks $f"
+            fi
           done
+          echo "Tweaks da iniettare: $tweaks"
           cyan -i youtube.ipa -o YouTubePlus_${{ github.event.inputs.tweak_version }}.ipa -uwef $tweaks -n "${{ github.event.inputs.display_name }}" -b ${{ github.event.inputs.bundle_id }}
 
       - name: Upload to GitHub Releases
